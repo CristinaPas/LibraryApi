@@ -1,5 +1,6 @@
 ﻿using LibraryShopApi.Data;
 using LibraryShopApi.DTOs;
+using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
 using LibraryShopApi.Services;
 using Microsoft.AspNetCore.Mvc;
@@ -12,49 +13,59 @@ namespace LibraryShopApi.Controllers;
 [ApiController]
 public class LibraryShopController : ControllerBase
 {
-    private LibraryShopApiDbContext dbContext;
-    private readonly PurchaseService purchaseService;
-    private readonly PaymentService paymentService;
+    private LibraryShopApiDbContext _dbContext;
+    private readonly PurchaseService _purchaseService;
+    private readonly PaymentService _paymentService;
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly IPurchaseRepository _purchaseRepository;
+    private readonly IBooksArchiveRepository _booksArchiveRepository;
 
-    public LibraryShopController(LibraryShopApiDbContext dbContext)
+    public LibraryShopController(LibraryShopApiDbContext dbContext, PurchaseService purchaseService, PaymentService paymentService,
+        IPaymentRepository paymentRepository, IPurchaseRepository purchaseRepository, IBooksArchiveRepository booksArchiveRepository)
     {
-        this.dbContext = dbContext;
+        _dbContext = dbContext;
+        _paymentRepository = paymentRepository;
+        _purchaseRepository = purchaseRepository;
+        _booksArchiveRepository = booksArchiveRepository;
+        _purchaseService = purchaseService;
     }
 
-    [HttpGet("price/{id}")]
-    public async Task<IActionResult> GetBookPrice(int id)
+    [HttpGet("price/{id}")] //put this in booksarchive repo
+    public async Task<IActionResult> CheckBookPrice(string name)
     {
-        var book = await dbContext.BooksArchives.FirstOrDefaultAsync(b => b.BookId == id);
+        if (name == null)
+        {
+            throw new ArgumentNullException(nameof(name));
+        }
 
-        if (book == null)
+        var isBookInShop = await _booksArchiveRepository.IsBookAvailable(name);
+
+        if (!(isBookInShop))
         {
             return NotFound("Book not found.");
         }
-        return Ok($"The price of the book '{book.Name}' is {book.Price}.");
+
+        var price = await _booksArchiveRepository.GetBookPrice(name);
+        return Ok($"The price of the book '{name}' is {price}.");
     }
 
     [HttpGet("availability/{id}")]
-    public async Task<IActionResult> IsBookAvailable(int id)
+    public async Task<IActionResult> CheckAvailabilityInStore(string name)
     {
-        var book = await dbContext.BooksArchives.FirstOrDefaultAsync(b => b.BookId == id);
-
-        if (book != null)
+        if (name == null)
         {
-            return Ok($"The book '{book.Name}' is still available, with {book.NumberOfBooks} number of copies.");
+            throw new ArgumentNullException(name);
         }
-        else return NotFound("The book isn't avaialble in the store");
-    }
 
-    [HttpPost("setAvailabilityFlag/")]
-    public async Task<IActionResult> SetFlag()
-    {
-        var books = await dbContext.BooksArchives.Where(b => b.NumberOfBooks > 0).ToListAsync();
+        bool availability = await _booksArchiveRepository.IsBookAvailable(name);
 
-        if (books != null)
+        if (!(availability))
         {
-            books.ForEach(b => b.SetFlag());
-            await dbContext.SaveChangesAsync();
-            return Ok($"Availability Flag has been set");
+            return NotFound("This book is not present in our shop.");
+        }
+        if (availability)
+        {
+            return Ok($"The book '{name}' is still available, with {_booksArchiveRepository.NumberOfBooksInStore} number of copies.");
         }
         else return NotFound("The book isn't avaialble in the store");
     }
@@ -65,26 +76,26 @@ public class LibraryShopController : ControllerBase
 
         if (customer != null)
         {
-            dbContext.Customers.Add(customer);
-            await dbContext.SaveChangesAsync();
+            _dbContext.Customers.Add(customer);
+            await _dbContext.SaveChangesAsync();
             return Ok($"Registration successful");
         }
         else return BadRequest("Invalid customer data.");
     }
 
     [HttpPost("makePurchase/")]
-    public async Task<IActionResult> MakePurchase([FromBody] PurchaseRequest request)
+    public async Task<IActionResult> MakePurchase([FromBody] PurchaseRequestDTO request)
     {
         if (request != null)
         {
-            bool doesCostumerExist = await dbContext.Customers.SingleOrDefaultAsync(c => c.Email == request.Email && c.FullName == request.FullName) != null;
-            bool doesBookExist = await dbContext.BooksArchives.SingleOrDefaultAsync(b => b.BookId == request.BookId) != null;
+            bool doesCostumerExist = await _dbContext.Customers.SingleOrDefaultAsync(c => c.Email == request.Email && c.FullName == request.FullName) != null;
+            bool doesBookExist = await _dbContext.BooksArchives.SingleOrDefaultAsync(b => b.BookId == request.BookId) != null;
 
             if (doesCostumerExist && doesBookExist)
             {
                 //trigger the purchase service
-                var myPurchaseService = new PurchaseService(dbContext);
-                var myPaymentService = new PaymentService(dbContext, purchaseService);
+                var myPurchaseService = new PurchaseService(_paymentRepository, _purchaseRepository);
+                var myPaymentService = new PaymentService(_paymentRepository);
                 await myPurchaseService.ExecutePurchase(request);
 
                 return Ok("Purchase successful");

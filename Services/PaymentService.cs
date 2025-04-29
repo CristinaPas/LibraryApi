@@ -1,24 +1,26 @@
 ﻿using LibraryShopApi.Data;
+using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
-using Microsoft.EntityFrameworkCore;
 
 namespace LibraryShopApi.Services;
 
 public class PaymentService
 {
+    private readonly IPaymentRepository _paymentRepository;
+    private readonly IBooksArchiveRepository _booksArchiveRepository;
     private readonly LibraryShopApiDbContext _dbContext;
 
-    public PaymentService(LibraryShopApiDbContext dbContext)
+
+    public PaymentService(IPaymentRepository paymentRepository, IBooksArchiveRepository booksArchiveRepository, LibraryShopApiDbContext dbContext)
     {
+        _paymentRepository = paymentRepository;
+        _booksArchiveRepository = booksArchiveRepository;
         _dbContext = dbContext;
     }
 
     public async Task ProcessPayment(Purchase purchase)
     {
-        //this goes in the repository
-        var price = await _dbContext.BooksArchives
-            .Where(b => b.BookId == purchase.BookId)
-            .Select(b => b.Price).FirstAsync();
+        decimal price = await _booksArchiveRepository.GetBookPrice(purchase.BookId);
 
         var payment = new Payment
         {
@@ -27,8 +29,21 @@ public class PaymentService
             PaymentDateTime = DateTime.Now
         };
 
-        //also this goes in the repository
-        _dbContext.Payment.Add(payment);
+        bool isPaymentSuccessful = await IsPaymentSuccessful();
+
+        if (!isPaymentSuccessful)
+        {
+            throw new Exception("Payment failed");
+        }
+
+        await _paymentRepository.AddPaymentIntoTable(payment);
         await _dbContext.SaveChangesAsync();
+
+    }
+
+    public async Task<bool> IsPaymentSuccessful()
+    {
+        //mock logic
+        return true;
     }
 }

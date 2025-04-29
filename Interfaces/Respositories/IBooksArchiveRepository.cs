@@ -1,15 +1,12 @@
-﻿namespace LibraryShopApi.Interfaces.Respositories
+﻿using LibraryShopApi.DTOs;
+
+namespace LibraryShopApi.Interfaces.Respositories
 {
     public interface IBooksArchiveRepository
     {
-        string Author { get; set; }
-        bool AvailabilityFlag { get; }
-        int BookId { get; set; }
-        string Name { get; set; }
-        int NumberOfBooks { get; set; }
-        decimal Price { get; set; }
-
-        void SetFlag();
-        void UpdateNumberOfBooks(int numberOfBooks);
+        public Task<decimal> GetBookPrice(string name);
+        public Task<bool> IsBookAvailable(string name);
+        public Task<int> NumberOfBooksInStore(string name);
+        public Task UpdateNumberOfBooks(PurchaseRequestDTO request);
     }
 }
