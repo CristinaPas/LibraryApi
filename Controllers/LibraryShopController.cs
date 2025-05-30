@@ -4,7 +4,6 @@ using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
 using LibraryShopApi.Services;
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 
 namespace LibraryShopApi.Controllers;
 
@@ -30,7 +29,7 @@ public class LibraryShopController : ControllerBase
         _purchaseService = purchaseService;
     }
 
-    [HttpGet("price/{id}")] //put this in booksarchive repo
+    [HttpGet("price/{id}")]
     public async Task<IActionResult> CheckBookPrice(string name)
     {
         if (name == null)
@@ -45,32 +44,28 @@ public class LibraryShopController : ControllerBase
             return NotFound("Book not found.");
         }
 
-        var price = await _booksArchiveRepository.GetBookPrice(name);
+        var price = await _booksArchiveRepository.GetBookPriceByName(name);
         return Ok($"The price of the book '{name}' is {price}.");
     }
 
     [HttpGet("availability/{id}")]
-    public async Task<IActionResult> CheckAvailabilityInStore(string name)
+    public async Task<IActionResult> CheckAvailabilityInStore(string bookName)
     {
-        if (name == null)
+        if (bookName == null)
         {
-            throw new ArgumentNullException(name);
+            throw new ArgumentNullException(bookName);
         }
 
-        bool availability = await _booksArchiveRepository.IsBookAvailable(name);
+        bool availability = await _booksArchiveRepository.IsBookAvailable(bookName);
 
         if (!(availability))
         {
-            return NotFound("This book is not present in our shop.");
+            return NotFound("The book isn't avaialble in the store");
         }
-        if (availability)
-        {
-            return Ok($"The book '{name}' is still available, with {_booksArchiveRepository.NumberOfBooksInStore} number of copies.");
-        }
-        else return NotFound("The book isn't avaialble in the store");
+        return Ok($"The book '{bookName}' is still available, with {_booksArchiveRepository.NumberOfBooksInStore} number of copies.");
     }
 
-    [HttpPost("registerCustomer/")]
+    [HttpPost("registerCustomer/")] //move this to Customer Repository
     public async Task<IActionResult> CreateCustomer([FromBody] Customer customer)
     {
 
@@ -88,28 +83,25 @@ public class LibraryShopController : ControllerBase
     {
         if (request != null)
         {
-            bool doesCostumerExist = await _dbContext.Customers.SingleOrDefaultAsync(c => c.Email == request.Email && c.FullName == request.FullName) != null;
-            bool doesBookExist = await _dbContext.BooksArchives.SingleOrDefaultAsync(b => b.BookId == request.BookId) != null;
+            //trigger the purchase service
+            string isPurchaseExecuted = await _purchaseService.ExecutePurchase(request);
 
-            if (doesCostumerExist && doesBookExist)
+            if (isPurchaseExecuted != null)
             {
-                //trigger the purchase service
-                var myPurchaseService = new PurchaseService(_paymentRepository, _purchaseRepository);
-                var myPaymentService = new PaymentService(_paymentRepository);
-                await myPurchaseService.ExecutePurchase(request);
 
                 return Ok("Purchase successful");
             }
             else
             {
-                return NotFound("Customer or book not found.");
+                return BadRequest("Purchase failed.");
             }
-
         }
+
         else
         {
-            return BadRequest("Invalid purchase data.");
+            return NotFound("The request is null and invalid");
         }
+
     }
 
 }

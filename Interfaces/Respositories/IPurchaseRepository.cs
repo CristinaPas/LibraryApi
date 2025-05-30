@@ -1,8 +1,8 @@
-﻿using LibraryShopApi.DTOs;
+﻿using LibraryShopApi.Models.Entities;
 
 namespace LibraryShopApi.Interfaces.Respositories;
 
 public interface IPurchaseRepository
 {
-    public Task AddNewPurchase(PurchaseRequestDTO purchaseRequest);
+    public Task AddNewPurchase(Purchase purchaseRequest);
 }

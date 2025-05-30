@@ -1,5 +1,4 @@
 ﻿using LibraryShopApi.Data;
-using LibraryShopApi.DTOs;
 using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
 using LibraryShopApi.Repositories.RepositoryBaseClass;
@@ -9,12 +8,10 @@ namespace LibraryShopApi.Repositories
     public class PaymentRepository : RepositoryBase<Payment>, IPaymentRepository
     {
         private readonly LibraryShopApiDbContext _dbContext;
-        private readonly PurchaseRequestDTO _purchaseRequestDTO;
         private readonly CancellationToken _cancellationToken;
-        public PaymentRepository(LibraryShopApiDbContext dbContext, PurchaseRequestDTO purchaseRequestDTO) : base(dbContext)
+        public PaymentRepository(LibraryShopApiDbContext dbContext) : base(dbContext)
         {
             _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            _purchaseRequestDTO = purchaseRequestDTO;
             _cancellationToken = new CancellationToken();
         }
 

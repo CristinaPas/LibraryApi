@@ -2,7 +2,7 @@
 
 public class PurchaseRequestDTO
 {
-    public int BookId { get; set; }
+    public string BookName { get; set; }
     public string Email { get; set; }
     public string FullName { get; set; }
     public int CustomerId { get; set; }

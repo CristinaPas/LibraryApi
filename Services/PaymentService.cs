@@ -1,10 +1,11 @@
 ﻿using LibraryShopApi.Data;
 using LibraryShopApi.Interfaces.Respositories;
+using LibraryShopApi.Interfaces.Services;
 using LibraryShopApi.Models.Entities;
 
 namespace LibraryShopApi.Services;
 
-public class PaymentService
+public class PaymentService : IPaymentService
 {
     private readonly IPaymentRepository _paymentRepository;
     private readonly IBooksArchiveRepository _booksArchiveRepository;
@@ -20,7 +21,7 @@ public class PaymentService
 
     public async Task ProcessPayment(Purchase purchase)
     {
-        decimal price = await _booksArchiveRepository.GetBookPrice(purchase.BookId);
+        var price = await _booksArchiveRepository.GetBookPriceById(purchase.BookId);
 
         var payment = new Payment
         {

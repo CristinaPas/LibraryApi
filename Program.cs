@@ -1,5 +1,8 @@
 using LibraryShopApi.Controllers;
 using LibraryShopApi.Data;
+using LibraryShopApi.Interfaces.Respositories;
+using LibraryShopApi.Interfaces.Services;
+using LibraryShopApi.Repositories;
 using LibraryShopApi.Services;
 using Microsoft.EntityFrameworkCore;
 
@@ -16,9 +19,20 @@ builder.Services.AddDbContext<LibraryShopApiDbContext>(options
     => options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
 // Register LibraryShopController as a service
-builder.Services.AddScoped<LibraryShopController>();
+
+builder.Services.AddScoped<IPurchaseRepository, PurchaseRepository>();
+builder.Services.AddScoped<IBooksArchiveRepository, BooksArchiveRepository>();
+builder.Services.AddScoped<IPaymentRepository, PaymentRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+
+builder.Services.AddScoped<IPaymentService, PaymentService>();
 builder.Services.AddScoped<PurchaseService>();
 builder.Services.AddScoped<PaymentService>();
+builder.Services.AddScoped<PurchaseService>();
+
+
+builder.Services.AddScoped<LibraryShopController>();
+
 
 var app = builder.Build();
 

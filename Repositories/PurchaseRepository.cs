@@ -1,35 +1,34 @@
 ﻿using LibraryShopApi.Data;
-using LibraryShopApi.DTOs;
 using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
 using LibraryShopApi.Repositories.RepositoryBaseClass;
 
-namespace LibraryShopApi.Repositories
+namespace LibraryShopApi.Repositories;
+
+public class PurchaseRepository : RepositoryBase<Purchase>, IPurchaseRepository
 {
-    public class PurchaseRepository : RepositoryBase<Purchase>, IPurchaseRepository
+    private readonly LibraryShopApiDbContext _dbContext;
+    private readonly CancellationToken _cancellationToken;
+
+    public PurchaseRepository(
+        LibraryShopApiDbContext dbContext) : base(dbContext)
     {
-        private readonly LibraryShopApiDbContext _dbContext;
-        private readonly PurchaseRepository _purchaseRepository;
-        private readonly CancellationToken _cancellationToken;
+        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
+    }
 
-        public PurchaseRepository(LibraryShopApiDbContext dbContext, PurchaseRepository purchaseRepository) : base(dbContext)
+
+    public async Task AddNewPurchase(Purchase purchaseRequest)
+    {
+        if (purchaseRequest == null)
         {
-            _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
-            _purchaseRepository = purchaseRepository;
+            throw new ArgumentNullException(nameof(purchaseRequest));
         }
-
-
-        public async Task AddNewPurchase(PurchaseRequestDTO purchaseRequest)
+        else
         {
-            if (purchaseRequest == null)
-            {
-                throw new ArgumentNullException(nameof(purchaseRequest));
-            }
-            else
-            {
-                _purchaseRepository.AddAsync(purchaseRequest, _cancellationToken);
-                _dbContext.SaveChangesAsync();
-            }
+
+            // Add the entity to the database
+            await _dbContext.Purchases.AddAsync(purchaseRequest);
+            await _dbContext.SaveChangesAsync();
         }
     }
 }
