@@ -10,8 +10,7 @@ public class PurchaseRepository : RepositoryBase<Purchase>, IPurchaseRepository
     private readonly LibraryShopApiDbContext _dbContext;
     private readonly CancellationToken _cancellationToken;
 
-    public PurchaseRepository(
-        LibraryShopApiDbContext dbContext) : base(dbContext)
+    public PurchaseRepository(LibraryShopApiDbContext dbContext) : base(dbContext)
     {
         _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
@@ -27,7 +26,7 @@ public class PurchaseRepository : RepositoryBase<Purchase>, IPurchaseRepository
         {
 
             // Add the entity to the database
-            await _dbContext.Purchases.AddAsync(purchaseRequest);
+            await _dbContext.Purchases.AddAsync(purchaseRequest); //what is this doing?
             await _dbContext.SaveChangesAsync();
         }
     }

@@ -1,5 +1,4 @@
-﻿using LibraryShopApi.Data;
-using LibraryShopApi.DTOs;
+﻿using LibraryShopApi.DTOs;
 using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Interfaces.Services;
 using LibraryShopApi.Models.Entities;
@@ -13,22 +12,20 @@ public class PurchaseService
     private readonly IBooksArchiveRepository _booksArchiveRepository;
     private readonly ICustomerRepository _customerRepository;
     private readonly IPaymentService _paymentService;
-    private readonly LibraryShopApiDbContext _dbContext;
 
     public PurchaseService(
         IPaymentRepository paymentRepository,
         IPurchaseRepository purchaseRepository,
         IBooksArchiveRepository booksArchiveRepository,
         ICustomerRepository customerRepository,
-        IPaymentService paymentService,
-        LibraryShopApiDbContext dbContext)
+        IPaymentService paymentService
+        )
     {
         _paymentRepository = paymentRepository;
         _purchaseRepository = purchaseRepository;
         _booksArchiveRepository = booksArchiveRepository;
         _customerRepository = customerRepository;
         _paymentService = paymentService;
-        _dbContext = dbContext ?? throw new ArgumentNullException(nameof(dbContext));
     }
 
     public async Task<string> ExecutePurchase(PurchaseRequestDTO request)
@@ -37,7 +34,7 @@ public class PurchaseService
 
         if (!(isValidForPurchase))
         {
-            return "Invalid purchase request: the customer doesn't exist or the request isn't valid";
+            return "The customer doesn't exist or the book isn't available for this purchase";
         }
 
         var purchase = new Purchase
@@ -45,25 +42,26 @@ public class PurchaseService
             BookId = await _booksArchiveRepository.GetBookIdByName(request.BookName),
             CustomerId = request.CustomerId,
             PurchaseDateTime = DateTime.Now
+            //NumberOfBooksPurchased = request.NumberOfBooksPurchased,
         };
 
-
         // Triggers the payment logic
-        _paymentService.ProcessPayment(purchase);
+        await _paymentService.ProcessPayment(purchase);
 
         //We update the number of books in the archive
         await _booksArchiveRepository.UpdateNumberOfBooks(request);
         await _purchaseRepository.AddNewPurchase(purchase);
 
-        return "Completed";
+        return "The purchase has been executed";
 
     }
 
     public async Task<bool> IsRequestValid(PurchaseRequestDTO request)
     {
-        bool doesCustomerExist = await _customerRepository.DoesCustomerExist(request);
-        bool isBookAvailable = await _booksArchiveRepository.IsBookAvailable(request.BookName);
 
-        return doesCustomerExist && isBookAvailable;
+        bool doesCustomerExist = await _customerRepository.DoesCustomerExist(request);
+        bool isBookAvailable = await _booksArchiveRepository.IsBookAvailableForPurchase(request);
+
+        return doesCustomerExist & isBookAvailable;
     }
 }

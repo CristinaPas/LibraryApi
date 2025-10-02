@@ -2,6 +2,7 @@
 using LibraryShopApi.Interfaces.Respositories;
 using LibraryShopApi.Models.Entities;
 using LibraryShopApi.Repositories.RepositoryBaseClass;
+using System.Diagnostics;
 
 namespace LibraryShopApi.Repositories
 {
@@ -19,11 +20,14 @@ namespace LibraryShopApi.Repositories
         {
             if (payment == null)
             {
+                Debug.WriteLine("Payment results in null, throwing exception");
                 throw new ArgumentNullException(nameof(payment));
             }
             else
             {
+                Debug.WriteLine("Add payment into Payment table");
                 await _dbContext.Payment.AddAsync(payment, _cancellationToken);
+                Debug.WriteLine("Save changes");
                 await _dbContext.SaveChangesAsync(_cancellationToken);
             }
 

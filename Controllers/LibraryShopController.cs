@@ -88,8 +88,7 @@ public class LibraryShopController : ControllerBase
 
             if (isPurchaseExecuted != null)
             {
-
-                return Ok("Purchase successful");
+                return Ok(isPurchaseExecuted);
             }
             else
             {
